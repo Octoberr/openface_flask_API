@@ -1,0 +1,3 @@
+# openfacefirstliving
+使用openface的第一个项目
+使用头部坐标点来判断头部是否居中和正
