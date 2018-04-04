@@ -21,6 +21,12 @@ def starttheserver():
     msg = face.start(dataurl)
     return Response(msg, mimetype="application/json")
 
+# 本地测试通过
+# @app.route('/test', methods=['get'])
+# def testapi():
+#     info = {"get": "yes, i got it"}
+#     return Response(json.dumps(info), mimetype="application/json")
+
 
 if __name__ == '__main__':
     http_server = WSGIServer(('0.0.0.0', 8000), app)

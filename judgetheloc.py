@@ -39,6 +39,13 @@ class FACE:
         direct = np.degrees(math.acos(np.dot(sideA, sideC) / (np.linalg.norm(sideA) * np.linalg.norm(sideC))))
         return direct
 
+    # 计算两个点之间的直线距离
+    def twodist(self, A, B):
+        x = A[0] - B[0]
+        y = A[1] - B[1]
+        lenpoint = math.sqrt((x**2)+(y**2))
+        return lenpoint
+
     def getthelandmark(self, dataurl):
         head = "data:image/jpeg;base64,"
         assert (dataurl.startswith(head))
@@ -51,7 +58,7 @@ class FACE:
                 "face": 0
             }
         else:
-            height, width, chanl = np.array(arryimage).shape
+            height, width, chanl = rgbFrame.shape
             landmarks = align.findLandmarks(rgbFrame, bb)
             msg = {
                 "face": 1,
@@ -62,8 +69,34 @@ class FACE:
             }
         return msg
 
+    # 使用本地图片测试程序,这段代码很牛B，解决了大部分问题
+    # def processthephoto(self):
+    #     imgdirectory = os.path.join(fileDir, 'imagetest')
+    #     imgpath = os.path.join(imgdirectory, 'openmouse.jpg')
+    #     # savepath = os.path.join(imgdirectory, 'openmousetag.jpg')
+    #     bgrimg = cv2.imread(imgpath)
+    #     rgbimg = cv2.cvtColor(bgrimg, cv2.COLOR_BGR2RGB)
+    #     bb = align.getLargestFaceBoundingBox(rgbimg)
+    #     landmarks = align.findLandmarks(rgbimg, bb)
+    #     # print landmarks, len(landmarks)
+    #     # for center in landmarks:
+    #     #     cv2.circle(bgrimg, center=center, radius=3, color=(255, 0, 0), thickness=3)
+    #     # cv2.imwrite(savepath, bgrimg)
+    #     # msg = {"face": 1, "landmarks": landmarks}
+    #     height, width, chanl = bgrimg.shape
+    #     msg = {
+    #         "face": 1,
+    #         "landmarks": landmarks,
+    #         "height": height,
+    #         "width": width,
+    #         "facemidleheight": (bb.bottom() + bb.top()) / 2
+    #     }
+    #     return msg
+
     def start(self, dataurl):
         msg = self.getthelandmark(dataurl)
+        # 本地测试时使用下面代码
+        # msg = self.processthephoto()
         if msg['face'] == 0:
             return json.dumps(msg)
         else:
@@ -71,23 +104,37 @@ class FACE:
             # 左右偏斜
             lefteye = landmarks[36]
             righteye = landmarks[45]
-            if lefteye - righteye == 0:
+            if lefteye[1] - righteye[1] == 0:
                 msg['lineangle'] = 0
             else:
+                # 水平偏斜，以左眼为角心， 角度的正负用高度的差来解决，用右眼减去左眼，因为坐标系为上面为0，所以结果为负表示右眼在上
                 lineloc = self.angleBetweenVectorsDegrees(righteye, lefteye, [msg['width'], lefteye[1]])
                 msg['lineangle'] = lineloc
+                # 负数为右眼在上，正数为左眼在上
+                msg['angleposttion'] = righteye[1] - lefteye[1]
             # 旋转偏斜
-            nose = landmarks[33]
+            nose = landmarks[30]
             leftnose = self.angleBetweenVectorsDegrees(lefteye, nose, [nose[0], 0])
             rightnose = self.angleBetweenVectorsDegrees(righteye, nose, [nose[0], 0])
             msg['leftnose'] = leftnose
-            msg[rightnose] = rightnose
+            msg['rightnose'] = rightnose
             # 上下偏向
             facemidleheight = msg['facemidleheight']
             # 结果为正，提示低头；结果为负，提示抬头
             distance = facemidleheight - nose[1]
             msg['upanddown'] = distance
+            # 眨眼系数的衡量
+            lefteyehightdist = (self.twodist(landmarks[37], landmarks[41])+self.twodist(landmarks[38], landmarks[40]))/2
+            msg['leftblink'] = lefteyehightdist/self.twodist(landmarks[36], landmarks[39])
+            righteyedist = (self.twodist(landmarks[43], landmarks[47])+self.twodist(landmarks[44], landmarks[46]))/2
+            msg['rightblink'] = righteyedist/self.twodist(landmarks[42], landmarks[45])
+            # 判断是否张嘴的系数
+            mousedist = (self.twodist(landmarks[50], landmarks[58])+self.twodist(landmarks[52], landmarks[56]))/2
+            msg['mouse'] = mousedist/self.twodist(landmarks[48], landmarks[54])
             return json.dumps(msg)
 
-
-
+#
+# if __name__ == '__main__':
+#     face = FACE()
+#     res = face.start("hello")
+#     print res
