@@ -17,6 +17,7 @@ predict = os.path.join(dlibModelDir, 'shape_predictor_68_face_landmarks.dat')
 torchmodel = os.path.join(openfaceModelDir, 'nn4.small2.v1.t7')
 align = openface.AlignDlib(predict)
 net = openface.TorchNeuralNet(torchmodel)
+comparenet = openface.TorchNeuralNet(torchmodel, 96)
 landmarkIndices = openface.AlignDlib.OUTER_EYES_AND_NOSE
 
 
@@ -138,3 +139,41 @@ class FACE:
 #     face = FACE()
 #     res = face.start("hello")
 #     print res
+
+
+class COMPARE:
+
+    def __init__(self, face, idcard):
+        self.face = face
+        self.idcard = idcard
+
+    def getcardrep(self):
+        # 本地测试使用在线的imgpath，线上测试使用bs64的代码
+        # bgrimg = cv2.imread(imgcardpath)
+        rgb = cv2.cvtColor(bgrimg, cv2.COLOR_BGR2RGB)
+        bb = align.getLargestFaceBoundingBox(rgb)
+        alignface = align.align(96, rgb, bb, landmarkIndices=landmarkIndices)
+        rep = comparenet.forward(alignface)
+        return rep
+
+    def getfacerep(self, facepath):
+        bgrimg = cv2.imread(facepath)
+        rgb = cv2.cvtColor(bgrimg, cv2.COLOR_BGR2RGB)
+        # 测试为找到一张人脸，实际应用可能存在多张人脸
+        bb = align.getLargestFaceBoundingBox(rgb)
+        alignface = align.align(96, rgb, bb, landmarkIndices=landmarkIndices)
+        rep = comparenet.forward(alignface)
+        return rep
+
+    def getcompareresult(self):
+        imgdirectory = os.path.join(fileDir, 'imagetest')
+        faceimgpath = os.path.join(imgdirectory, 'openmouse.jpg')
+        idcardpath = os.path.join(imgdirectory, 'swmidcard.jpg')
+        d = self.getcardrep(idcardpath) - self.getfacerep(faceimgpath)
+        res = np.dot(d, d)
+        return res
+
+
+if __name__ == '__main__':
+    compare = COMPARE()
+    compare.getcompareresult()

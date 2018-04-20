@@ -9,7 +9,7 @@ import gevent.monkey
 from gevent.pywsgi import WSGIServer
 gevent.monkey.patch_all()
 # 内部引用
-from judgetheloc import FACE
+from judgetheloc import FACE, COMPARE
 app = Flask(__name__)
 
 
@@ -26,6 +26,15 @@ def starttheserver():
 # def testapi():
 #     info = {"get": "yes, i got it"}
 #     return Response(json.dumps(info), mimetype="application/json")
+
+# 人脸和身份证的对比
+@app.route('/compare', methods=['post'])
+def comparewithidcard():
+    args = json.loads(request.data)
+    faceurl = args['faceurl']
+    cardurl = args['cardurl']
+    compare = COMPARE()
+    return Response('some json data', mimetype="application/json")
 
 
 if __name__ == '__main__':
