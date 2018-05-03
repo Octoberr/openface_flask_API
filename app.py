@@ -2,6 +2,8 @@
 """
 开启flask服务
 create by swm 2018/1/25
+增加人像对比
+changed 2018/05/03
 """
 from flask import Flask, request, Response
 import json
@@ -21,11 +23,13 @@ def starttheserver():
     msg = face.start(dataurl)
     return Response(msg, mimetype="application/json")
 
-# 本地测试通过
-# @app.route('/test', methods=['get'])
-# def testapi():
-#     info = {"get": "yes, i got it"}
-#     return Response(json.dumps(info), mimetype="application/json")
+
+# 本地测试通过,用于测试本地的flask是否开启
+@app.route('/test', methods=['get'])
+def testapi():
+    info = {"get": "yes, i got it"}
+    return Response(json.dumps(info), mimetype="application/json")
+
 
 # 人脸和身份证的对比
 @app.route('/compare', methods=['post'])
@@ -34,7 +38,9 @@ def comparewithidcard():
     faceurl = args['faceurl']
     cardurl = args['cardurl']
     compare = COMPARE()
-    return Response('some json data', mimetype="application/json")
+    result = compare.getcompareresult(cardurl, faceurl)
+    info = {"result": result}
+    return Response(info, mimetype="application/json")
 
 
 if __name__ == '__main__':
