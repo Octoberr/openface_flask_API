@@ -40,7 +40,7 @@ def comparewithidcard():
     compare = COMPARE()
     result = compare.getcompareresult(cardurl, faceurl)
     info = {"result": result}
-    return Response(info, mimetype="application/json")
+    return Response(json.dumps(info), mimetype="application/json")
 
 
 if __name__ == '__main__':
